@@ -1,20 +1,25 @@
 import 'package:ecommerce_app/screens/login_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _SignUpScreenState();
+  State<SignUpScreen> createState() => _SignUpScreenState();
 }
 
-class _SignUpScreenState extends State<LoginScreen> {
+class _SignUpScreenState extends State<SignUpScreen> {
   final _formKey = GlobalKey<FormState>();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isLoading = false;
+
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  bool _isLoading = false;
 
   Future<void> _signUp()async {
     if (!_formKey.currentState!.validate()) {
@@ -25,12 +30,20 @@ class _SignUpScreenState extends State<LoginScreen> {
     });
 
     try {
-      await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      final UserCredential userCredential =
+        await _auth.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
       );
+      if (userCredential.user != null) {
+        await _firestore.collection('users').doc(userCredential.user!.uid).set ({
+          'email': _emailController.text.trim(),
+          'role': 'user',
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
     } on FirebaseAuthException catch (e) {
-      String message = 'An error occured';
+      String message = 'An error occurred';
       if (e.code == 'weak-password') {
         message = 'The password provided is too weak.';
       } else if (e.code == 'email-already-in-use') {
@@ -40,17 +53,20 @@ class _SignUpScreenState extends State<LoginScreen> {
         SnackBar(
           content: Text(message),
           backgroundColor: Colors.red,
-        ),
-      );
+          ),
+        );
     } catch (e) {
       print(e);
     }
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+    finally {
+      if(mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
+
 
   @override
   void dispose() {
