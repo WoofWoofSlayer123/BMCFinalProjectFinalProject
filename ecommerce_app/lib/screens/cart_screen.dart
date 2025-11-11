@@ -1,17 +1,10 @@
 import 'package:ecommerce_app/providers/cart_provider.dart';
+import 'package:ecommerce_app/screens/payment_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:ecommerce_app/screens/order_success_screen.dart';
 
-class CartScreen extends StatefulWidget {
+class CartScreen extends StatelessWidget {
   const CartScreen({super.key});
-
-  @override
-  State<CartScreen> createState() => _CartScreenState();
-}
-
-class _CartScreenState extends State<CartScreen> {
-  bool _isLoading = false;
 
   @override
   Widget build(BuildContext context) {
@@ -40,8 +33,7 @@ class _CartScreenState extends State<CartScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
-                          '₱${(cartItem.price * cartItem.quantity)
-                              .toStringAsFixed(2)}'),
+                          '₱${(cartItem.price * cartItem.quantity).toStringAsFixed(2)}'),
                       IconButton(
                         icon: const Icon(Icons.delete, color: Colors.red),
                         onPressed: () {
@@ -58,60 +50,54 @@ class _CartScreenState extends State<CartScreen> {
             margin: const EdgeInsets.all(16),
             child: Padding(
               padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              child: Column(
                 children: [
-                  const Text(
-                    'Total:',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Subtotal:', style: TextStyle(fontSize: 16)),
+                      Text('₱${cart.subtotal.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16)),
+                    ],
                   ),
-                  Text(
-                    '₱${cart.totalPrice.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                        fontSize: 20, fontWeight: FontWeight.bold),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('VAT (12%):', style: TextStyle(fontSize: 16)),
+                      Text('₱${cart.vat.toStringAsFixed(2)}', style: const TextStyle(fontSize: 16)),
+                    ],
+                  ),
+                  const Divider(height: 20, thickness: 1),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text('Total:', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                      Text(
+                        '₱${cart.totalPriceWithVat.toStringAsFixed(2)}',
+                        style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.deepPurple),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
           ),
-          const SizedBox(height: 20),
           Padding(
             padding: const EdgeInsets.all(16.0),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
-                minimumSize: const Size.fromHeight(50), // Wide button
+                minimumSize: const Size.fromHeight(50),
               ),
-              onPressed: (_isLoading || cart.items.isEmpty) ? null : () async {
-                setState(() {
-                  _isLoading = true;
-                });
-                try {
-                  final cartProvider = Provider.of<CartProvider>(
-                      context, listen: false);
-                  await cartProvider.placeOrder();
-                  await cartProvider.clearCart();
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                        builder: (context) => const OrderSuccessScreen()),
-                        (route) => false,
-                  );
-                } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Failed to place order: $e')),
-                  );
-                } finally {
-                  if (mounted) {
-                    setState(() {
-                      _isLoading = false;
-                    });
-                  }
-                }
+              onPressed: cart.items.isEmpty ? null : () {
+                Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (context) => PaymentScreen(
+                      totalAmount: cart.totalPriceWithVat,
+                    ),
+                  ),
+                );
               },
-              child: _isLoading
-                  ? const CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-              )
-                  : const Text('Place Order'),
+              child: const Text('Proceed to Payment'),
             ),
           ),
         ],

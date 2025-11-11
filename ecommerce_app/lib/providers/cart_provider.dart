@@ -43,14 +43,7 @@ class CartProvider with ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   List<CartItem> get items => _items;
-  int get itemCount {
-    int total = 0;
-    for (var item in _items) {
-      total += item.quantity;
-    }
-    return total;
-  }
-  double get totalPrice {
+  double get subtotal {
     double total = 0.0;
     for (var item in _items) {
       total += (item.price * item.quantity);
@@ -58,13 +51,30 @@ class CartProvider with ChangeNotifier {
     return total;
   }
 
-  void addItem(String id, String name, double price) {
+  double get vat {
+    return subtotal * 0.12;
+  }
+
+  double get totalPriceWithVat {
+    return subtotal + vat;
+  }
+
+  int get itemCount {
+    return _items.fold(0, (total, item) => total + item.quantity);
+  }
+
+  void addItem(String id, String name, double price, int quantity) {
     var index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
-      _items[index].quantity++;
+      _items[index].quantity += quantity;
     } else {
-      _items.add(CartItem(id: id, name: name, price: price));
-    }
+      _items.add(CartItem(
+        id: id,
+        name: name,
+        price: price,
+        quantity: quantity, // Use the quantity from the parameter
+      ));
+  }
     _saveCart();
     notifyListeners();
   }
@@ -83,16 +93,21 @@ class CartProvider with ChangeNotifier {
     try {
       final List<Map<String, dynamic>> cartData =
       _items.map((item) => item.toJson()).toList();
-      final double total = totalPrice;
+      final double sub = subtotal;
+      final double v = vat;
+      final double total = totalPriceWithVat;
       final int count = itemCount;
       await _firestore.collection('orders').add({
         'userId': _userId,
         'items': cartData,
+        'subtotal': sub,
+        'vat': v,
         'totalPrice': total,
         'itemCount': count,
         'status': 'Pending',
         'createdAt': FieldValue.serverTimestamp(),
       });
+
     } catch (e) {
       print('Error placing order: $e');
       throw e;
@@ -115,14 +130,17 @@ class CartProvider with ChangeNotifier {
   }
 
   CartProvider() {
-    print('Cart Provider initialized');
+    print('CartProvider created.');
+  }
+  void initializeAuthListener() {
+    print('CartProvider auth listener initialized');
     _authSubscription = _auth.authStateChanges().listen((User? user) {
       if (user == null) {
         print('User logged out, clearing cart.');
         _userId = null;
         _items = [];
       } else {
-        print('Welcome!: ${user.uid}. Fetching cart...');
+        print('User logged in: ${user.uid}. Fetching cart...');
         _userId = user.uid;
         _fetchCart();
       }
@@ -168,7 +186,7 @@ class CartProvider with ChangeNotifier {
   @override
 
   void dispose() {
-    _authSubscription?.cancel(); // Cancel the auth listener
+    _authSubscription?.cancel();
     super.dispose();
   }
 }

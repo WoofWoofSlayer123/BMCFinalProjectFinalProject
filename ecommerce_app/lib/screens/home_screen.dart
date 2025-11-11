@@ -8,6 +8,9 @@ import 'package:ecommerce_app/providers/cart_provider.dart';
 import 'package:ecommerce_app/screens/cart_screen.dart';
 import 'package:provider/provider.dart';
 import 'package:ecommerce_app/screens/order_history_screen.dart';
+import 'package:ecommerce_app/widgets/notification_icon.dart';
+import 'package:ecommerce_app/screens/profile_screen.dart';
+import 'package:ecommerce_app/screens/chat_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -15,9 +18,12 @@ class HomeScreen extends StatefulWidget {
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 class _HomeScreenState extends State<HomeScreen> {
   String _userRole = 'user';
   final User? _currentUser = FirebaseAuth.instance.currentUser;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   @override
   void initState() {
     super.initState();
@@ -26,10 +32,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _fetchUserRole() async {
     if (_currentUser == null) return;
-    try{
+    try {
       final doc = await FirebaseFirestore.instance
           .collection('users')
-          .doc(_currentUser!.uid)
+          .doc(_currentUser.uid)
           .get();
       if (doc.exists && doc.data() != null) {
         setState(() {
@@ -53,7 +59,10 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(_currentUser != null ? 'Welcome, ${_currentUser!.email}' : 'Home'),
+        title: Image.asset(
+          'assets/images/splash_logo.png',
+          height: 40,
+        ),
         actions: [
           Consumer<CartProvider>(
             builder: (context, cart, child) {
@@ -73,6 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
               );
             },
           ),
+          const NotificationIcon(),
           IconButton(
             icon: const Icon(Icons.receipt_long), // A "receipt" icon
             tooltip: 'My Orders',
@@ -97,12 +107,51 @@ class _HomeScreenState extends State<HomeScreen> {
               },
             ),
           IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout',
-            onPressed: _signOut,
+            icon: const Icon(Icons.person_outline),
+            tooltip: 'Profile',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (context) => const ProfileScreen()),
+              );
+            },
           ),
         ],
       ),
+      floatingActionButton: _userRole == 'user'
+          ? StreamBuilder<DocumentSnapshot>(
+              stream: _firestore
+                  .collection('chats')
+                  .doc(_currentUser!.uid)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                int unreadCount = 0;
+                if (snapshot.hasData && snapshot.data!.exists) {
+                  final data = snapshot.data!.data();
+                  if (data != null) {
+                    unreadCount =
+                        (data as Map<String, dynamic>)['unreadByUserCount'] ??
+                        0;
+                  }
+                }
+                return Badge(
+                  label: Text('$unreadCount'),
+                  isLabelVisible: unreadCount > 0,
+                  child: FloatingActionButton.extended(
+                    icon: const Icon(Icons.support_agent),
+                    label: const Text('Contact Admin'),
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              ChatScreen(chatRoomId: _currentUser!.uid),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
+            )
+          : null,
       body: StreamBuilder<QuerySnapshot>(
         stream: FirebaseFirestore.instance
             .collection('products')

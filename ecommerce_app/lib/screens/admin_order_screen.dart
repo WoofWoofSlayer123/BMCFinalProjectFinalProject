@@ -12,11 +12,20 @@ class AdminOrderScreen extends StatefulWidget {
 class _AdminOrderScreenState extends State<AdminOrderScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  Future<void> _updateOrderStatus(String orderId, String newStatus) async {
+  Future<void> _updateOrderStatus(String orderId, String newStatus, String userId) async {
     try {
       await _firestore.collection('orders').doc(orderId).update({
         'status': newStatus,
       });
+      await _firestore.collection('notifications').add({
+        'userId': userId,
+        'title': 'Order Status Updated',
+        'body': 'Your order ($orderId) has been updated to "$newStatus".',
+        'orderId': orderId,
+        'createdAt': FieldValue.serverTimestamp(),
+        'isRead': false, // 5. Mark it as unread
+      });
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Order status updated!')),
       );
@@ -27,10 +36,10 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
     }
   }
 
-  void _showStatusDialog(String orderId, String currentStatus) {
+  void _showStatusDialog(String orderId, String currentStatus, String userId) {
     showDialog(
       context: context,
-      builder: (context) {
+      builder: (dialogContext) {
         const statuses = [
           'Pending',
           'Processing',
@@ -41,24 +50,24 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
 
         return AlertDialog(
           title: const Text('Update Order Status'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: statuses.map((status) {
-              return ListTile(
-                title: Text(status),
-                trailing: currentStatus == status
-                    ? const Icon(Icons.check)
-                    : null,
-                onTap: () {
-                  _updateOrderStatus(orderId, status);
-                  Navigator.of(context).pop();
-                },
-              );
-            }).toList(),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: statuses.map((status) {
+                return ListTile(
+                  title: Text(status),
+                  trailing: currentStatus == status ? const Icon(Icons.check) : null,
+                  onTap: () {
+                    _updateOrderStatus(orderId, status, userId);
+                    Navigator.of(context).pop();
+                  },
+                );
+              }).toList(),
+            ),
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
+              onPressed: () => Navigator.of(dialogContext).pop(),
               child: const Text('Close'),
             )
           ],
@@ -95,10 +104,12 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
             itemBuilder: (context, index) {
               final order = orders[index];
               final orderData = order.data() as Map<String, dynamic>;
-              final Timestamp timestamp = orderData['createdAt'];
-              final String formattedDate = DateFormat('MM/dd/yyyy hh:mm a')
-                  .format(timestamp.toDate());
-              final String status = orderData['status'];
+              final Timestamp? timestamp = orderData['createdAt'];
+              final String formattedDate = timestamp != null
+                  ? DateFormat('MM/dd/yyyy hh:mm a').format(timestamp.toDate())
+                  : 'No date';
+              final String status = orderData['status'] ?? 'Unknown';
+              final String userId = orderData['userId'] ?? 'Unknown User';
               return Card(
                 margin: const EdgeInsets.all(8.0),
                 child: ListTile(
@@ -123,7 +134,7 @@ class _AdminOrderScreenState extends State<AdminOrderScreen> {
                     status == 'Delivered' ? Colors.green : Colors.red,
                   ),
                   onTap: () {
-                    _showStatusDialog(order.id, status);
+                    _showStatusDialog(order.id, status, userId);
                   },
                 ),
               );

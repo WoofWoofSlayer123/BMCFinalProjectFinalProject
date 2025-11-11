@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:ecommerce_app/providers/cart_provider.dart';
 import 'package:provider/provider.dart';
 
-class ProductDetailScreen extends StatelessWidget {
+class ProductDetailScreen extends StatefulWidget {
   final Map<String, dynamic> productData;
   final String productId;
 
@@ -13,11 +13,33 @@ class ProductDetailScreen extends StatelessWidget {
   });
 
   @override
+  State<ProductDetailScreen> createState() => _ProductDetailScreenState();
+}
+
+class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  int _quantity = 1;
+
+  void _incrementQuantity() {
+    setState(() {
+      _quantity++;
+    });
+  }
+
+  void _decrementQuantity() {
+    if (_quantity > 1) {
+      setState(() {
+        _quantity--;
+      });
+    }
+  }
+
+
+  @override
   Widget build(BuildContext context) {
-    final String name = productData['name'];
-    final String description = productData['description'];
-    final String imageUrl = productData['imageUrl'];
-    final double price = productData['price'];
+    final String name = widget.productData['name'];
+    final String description = widget.productData['description'];
+    final String imageUrl = widget.productData['imageUrl'];
+    final double price = widget.productData['price'];
     final cart = Provider.of<CartProvider>(context, listen: false);
     return Scaffold(
       appBar: AppBar(title: Text(name)),
@@ -69,21 +91,46 @@ class ProductDetailScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   Text(
                     'About this item',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    style: Theme
+                        .of(context)
+                        .textTheme
+                        .titleLarge,
                   ),
                   const SizedBox(height: 8),
                   Text(
                     description,
                     style: const TextStyle(fontSize: 16, height: 1.5),
                   ),
+                  const SizedBox(height: 20),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconButton.filledTonal(
+                        icon: const Icon(Icons.remove),
+                        onPressed: _decrementQuantity,
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 20),
+                        child: Text(
+                          '$_quantity', // 7. Display our state variable
+                          style: const TextStyle(
+                              fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                      IconButton.filled(
+                        icon: const Icon(Icons.add),
+                        onPressed: _incrementQuantity,
+                      ),
+                    ],
+                  ),
                   const SizedBox(height: 30),
                   ElevatedButton.icon(
                     onPressed: () {
-                      cart.addItem(productId, name, price);
+                      cart.addItem(widget.productId, name, price, _quantity);
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Added to cart!'),
-                          duration: Duration(seconds: 2),
+                        SnackBar(
+                          content: Text('Added $_quantity x $name to cart!'),
+                          duration: const Duration(seconds: 2),
                         ),
                       );
                     },
