@@ -11,10 +11,10 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final User? _currentUser = FirebaseAuth.instance.currentUser;
+
   final _formKey = GlobalKey<FormState>();
   final _newPasswordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-
   bool _isLoading = false;
 
   @override
@@ -23,6 +23,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _confirmPasswordController.dispose();
     super.dispose();
   }
+
   Future<void> _changePassword() async {
     if (!_formKey.currentState!.validate()) {
       return;
@@ -34,6 +35,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     try {
       await _currentUser!.updatePassword(_newPasswordController.text);
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Password changed successfully!'),
@@ -60,9 +62,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       }
     }
   }
+
   Future<void> _signOut() async {
     final navigator = Navigator.of(context);
+
     await _auth.signOut();
+
     navigator.popUntil((route) => route.isFirst);
   }
 
@@ -88,6 +93,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 24),
             const Divider(),
             const SizedBox(height: 16),
+
             Text(
               'Change Password',
               style: Theme.of(context).textTheme.titleLarge,
@@ -122,7 +128,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (value == null || value.isEmpty) {
                         return 'Please confirm your password';
                       }
-                      // 5. Check if it matches the other field
                       if (value != _newPasswordController.text) {
                         return 'Passwords do not match';
                       }
@@ -133,6 +138,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             const SizedBox(height: 24),
+
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 16),
@@ -148,6 +154,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 40),
             const Divider(),
             const SizedBox(height: 20),
+
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red[700],

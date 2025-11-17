@@ -9,6 +9,7 @@ class OrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     final Timestamp? timestamp = orderData['createdAt'];
     final String formattedDate;
 
@@ -18,6 +19,7 @@ class OrderCard extends StatelessWidget {
     } else {
       formattedDate = 'Date not available';
     }
+
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       elevation: 3,
@@ -28,14 +30,17 @@ class OrderCard extends StatelessWidget {
             'Total: ₱${(orderData['totalPrice'] as double).toStringAsFixed(2)}',
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
           ),
+
           subtitle: Text(
             'Items: ${orderData['itemCount']}\n'
                 'Status: ${orderData['status']}',
           ),
+
           trailing: Text(
             formattedDate,
             style: const TextStyle(fontSize: 12, color: Colors.grey),
           ),
+
           isThreeLine: true,
         ),
       ),

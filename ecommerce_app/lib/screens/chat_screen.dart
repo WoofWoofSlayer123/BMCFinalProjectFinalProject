@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:ecommerce_app/widgets/chat_bubble.dart';
+import 'package:ecommerce_app/Widgets/chat_bubble.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
@@ -20,6 +20,7 @@ class ChatScreen extends StatefulWidget {
 class _ChatScreenState extends State<ChatScreen> {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
@@ -32,6 +33,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _markMessagesAsRead() async {
     final User? currentUser = _auth.currentUser;
     if (currentUser == null) return;
+
     if (currentUser.uid == widget.chatRoomId) {
       await _firestore.collection('chats').doc(widget.chatRoomId).set({
         'unreadByUserCount': 0,
@@ -66,22 +68,25 @@ class _ChatScreenState extends State<ChatScreen> {
         'senderId': currentUser.uid,
         'senderEmail': currentUser.email,
       });
+
       Map<String, dynamic> parentDocData = {
         'lastMessage': messageText,
         'lastMessageAt': timestamp,
       };
+
       if (currentUser.uid == widget.chatRoomId) {
         parentDocData['userEmail'] = currentUser.email;
-        // Increment the ADMIN's unread count
         parentDocData['unreadByAdminCount'] = FieldValue.increment(1);
       }
       else {
         parentDocData['unreadByUserCount'] = FieldValue.increment(1);
       }
+
       await _firestore
           .collection('chats')
           .doc(widget.chatRoomId)
           .set(parentDocData, SetOptions(merge: true));
+
       _scrollController.animateTo(
         _scrollController.position.maxScrollExtent,
         duration: const Duration(milliseconds: 300),

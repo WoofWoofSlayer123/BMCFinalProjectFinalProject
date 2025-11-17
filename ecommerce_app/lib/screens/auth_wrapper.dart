@@ -16,9 +16,11 @@ class AuthWrapper extends StatelessWidget {
             body: Center(child: CircularProgressIndicator()),
           );
         }
+
         if (snapshot.hasData) {
           return const HomeScreen();
         }
+
         return const LoginScreen();
       },
     );

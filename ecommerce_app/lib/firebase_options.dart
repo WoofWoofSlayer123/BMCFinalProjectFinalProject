@@ -53,7 +53,7 @@ class DefaultFirebaseOptions {
     apiKey: 'AIzaSyCCfvgN6gJ5uM6yS73D9MUeCLWQ-hNSsho',
     appId: '1:475925989651:web:7aa06cdf9d9c0febec72e6',
     messagingSenderId: '475925989651',
-    projectId: 'my-ecommerce-app-123-c4b6f',
+    projectId: 'my-ecommerce-app-123-3462d',
     authDomain: 'my-ecommerce-app-123-c4b6f.firebaseapp.com',
     storageBucket: 'my-ecommerce-app-123-c4b6f.firebasestorage.app',
   );

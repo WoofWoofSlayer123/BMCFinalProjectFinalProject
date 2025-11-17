@@ -7,6 +7,7 @@ enum PaymentMethod { card, gcash, bank }
 
 class PaymentScreen extends StatefulWidget {
   final double totalAmount;
+
   const PaymentScreen({super.key, required this.totalAmount});
 
   @override
@@ -24,7 +25,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
     try {
       await Future.delayed(const Duration(seconds: 3));
+
       final cartProvider = Provider.of<CartProvider>(context, listen: false);
+
       await cartProvider.placeOrder();
       await cartProvider.clearCart();
 
@@ -108,7 +111,6 @@ class _PaymentScreenState extends State<PaymentScreen> {
                 });
               },
             ),
-
             const SizedBox(height: 32),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
